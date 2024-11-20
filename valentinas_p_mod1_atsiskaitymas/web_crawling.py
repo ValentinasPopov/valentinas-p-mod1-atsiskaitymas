@@ -48,7 +48,7 @@ class WebCrawling:
         if selected_site == "lrytas.lt":
             return self.straipsniaiList
 
-    def save_file(self, selected_site, filename = " ", format = " "):
+    def save_file(self, selected_site, filename = " ", format = "list"):
 
         currentList = []
 
@@ -69,12 +69,12 @@ class WebCrawling:
             print(f"Issaugojama i  {filename} . {format}")
 
         elif format == "csv":
-            with open(filename, "w", newline='', ) as cswFile:
+            with open(filename+"."+format, "w", newline='', ) as cswFile:
                 writer = csv.writer(cswFile)
                 writer.writerows(currentList)  # Writing data
             print(f"Issaugojama i  {filename} . {format}")
         elif format == "json":
-            with open(filename, "w", newline='', ) as jsonFile:
+            with open(filename+"."+format, "w", newline='', ) as jsonFile:
                 json.dump(currentList, jsonFile)
         else:
             raise ValueError("Netinkamas formatas, pasirinkite list, csv arba json")
