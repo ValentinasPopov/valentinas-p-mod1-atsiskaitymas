@@ -1,80 +1,68 @@
+import requests
 import csv
 import json
-
-from requests import get
-from lxml.etree import HTML
+from lxml import html
 from time import time
+from typing import Optional
 
 
-class WebCrawling:
-    def __init__(self):
-        self.vaistaiList = []
-        self.straipsniaiList = []
+def crawling(time_limit: int = 60, source: str = "https://camelia.lt", return_format: str = "list") -> Optional[str]:
 
-    def read_from_website(self, selected_site, timeout_duration):
+    vaistaiList = []
+    try:
+        #Pradeda skaiciuoti laika
         start_time = time()
+        response = requests.get(source, timeout=time_limit)
 
-        if selected_site == "camelia.lt":
-            url = "https://camelia.lt/c/prekiu-medis/vitaminai-maisto-papildai-mineralai/groziui/plaukams-1-1522"
-        elif selected_site == "lrytas.lt":
-            url = "https://lrytas.lt"
+        #Raise HTTPError
+        response.raise_for_status()
+
+        # Parse HTML
+        tree = html.fromstring(response.text)
+
+        product_nodes = tree.xpath("//div[contains(@class, 'product-card')]")
+
+        for product in product_nodes:
+            # Istraukiamas tekstas
+            text = product.xpath(".//div[contains(@class,'product-name')]/text()")[0].strip()
+
+            # Istraukiama paveiksleliu URL
+            image_url = product.xpath(".//div/img[contains(@class,'product-image')]/@src")[0].strip()
+
+            # Idedame i list
+            vaistaiList.append((text,image_url))
+
+        #Apskaiciuota, per kiek laiko rado paveikslelius ir teksta
+        elapsed_time = time() - start_time
+        print(elapsed_time)
+
+        # Jeigu formatas "list", isspausdina i console
+        if return_format == "list":
+
+            for i in vaistaiList:
+                print(i)
+        # Jeigu formatas "csv", issaugoja faila i csv
+        elif return_format == "csv":
+            try:
+                with open('Test.csv', 'w', newline='', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['Pavadinimas', 'Nuotraukos URL'])
+                    for element in vaistaiList:
+                        writer.writerow(element)
+                print("CSV failas sukurtas: vaistai.csv")
+                return "CSV failas sukurtas"
+            except Exception as e:
+                print(f"CSV failo klaida: {e}")
+                return None
+        # Jeigu formatas "json", issaugoja faila i json
+        elif return_format == "json":
+            with open("Test.json", "w", newline='', ) as jsonFile:
+                json.dump(vaistaiList, jsonFile, ensure_ascii=False, indent=4)
         else:
-            raise ValueError("The website is not in the list.")
+            # Netinkamo formato error
+            raise ValueError("Nepalaikomas formatas. Naudokite 'list', 'csv' arba 'json'.")
 
-        response = get(url)
-        text = response.text
-        tree = HTML(text)
 
-        # Jeigu pasirinktas "camelia.lt"
-        if selected_site == "camelia.lt":
-            elements = tree.xpath("//div[contains(@class, 'product-card')]")
-            for element in elements:
-                if time() - start_time > timeout_duration:
-                    break
-                try:
-                    pavadinimas_text = element.xpath(".//div[contains(@class,'product-name')]/text()")
-                    paveikslai_text = element.xpath(".//div/img[contains(@class,'product-image')]/@src")
-
-                    if pavadinimas_text and paveikslai_text:
-                        self.vaistaiList.append((
-                            pavadinimas_text[0].strip(),
-                            paveikslai_text[0].strip()
-                        ))
-                except IndexError:
-                    print("Nerasta elementu")
-                return self.vaistaiList
-
-        #Jeigu pasirinktas "lrytas.lt"
-        if selected_site == "lrytas.lt":
-            return self.straipsniaiList
-
-    def save_file(self, selected_site, filename = " ", format = "list"):
-
-        currentList = []
-
-        if selected_site == "camelia.lt":
-            currentList = self.vaistaiList
-        elif selected_site == "lrytas.lt":
-            currentList = self.straipsniaiList
-        else:
-            raise ValueError("Nera tokios svetainės sąraše")
-
-        #issaugojama i csv faila
-        if format == "list":
-            return currentList
-        elif format == "csv":
-            with open(filename, "w", newline='', ) as cswFile:
-                writer = csv.writer(cswFile)
-                writer.writerows(currentList)  # Writing data
-            print(f"Issaugojama i  {filename} . {format}")
-
-        elif format == "csv":
-            with open(filename+"."+format, "w", newline='', ) as cswFile:
-                writer = csv.writer(cswFile)
-                writer.writerows(currentList)  # Writing data
-            print(f"Issaugojama i  {filename} . {format}")
-        elif format == "json":
-            with open(filename+"."+format, "w", newline='', ) as jsonFile:
-                json.dump(currentList, jsonFile)
-        else:
-            raise ValueError("Netinkamas formatas, pasirinkite list, csv arba json")
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        return None
