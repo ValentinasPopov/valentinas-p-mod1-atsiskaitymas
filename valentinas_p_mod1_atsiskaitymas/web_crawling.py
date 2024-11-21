@@ -17,6 +17,8 @@ def crawling(time_limit: int = 60, source: str = "camelia.lt", return_format: st
         elif source == "lrytas.lt":
             url = "https://www.lrytas.lt"
             #dataList = extractLrytas(tree)
+        else:
+            raise ValueError("Svetaine nera sarase")
 
         #Pradeda skaiciuoti laika
         start_time = time()
@@ -49,17 +51,17 @@ def extractCamelia(tree):
 
     dataList = []
     product_nodes = tree.xpath("//div[contains(@class, 'product-card')]")
-    for product in enumerate(product_nodes, start = 1):
+    for id, product in enumerate(product_nodes, start = 1):
         # Istraukiamas pavadinimas
-        text = product.xpath(".//div[contains(@class,'product-name')]/text()")[0].strip()
-        #Patikrinama, ar pavadinimas ne tuscias
+        titles = product.xpath('.//div[contains(@class,\'product-name\')]/text()')
+        titles = titles[0].strip() if titles else None
 
         # Istraukiama paveiksleliu URL
-        image_url = product.xpath(".//div/img[contains(@class,'product-image')]/@src")[0].strip("['']")
-        #Patikrinama, ar img_url ne tuscias
+        images_url = product.xpath(".//div/img[contains(@class,'product-image')]/@src")
+        images_url = images_url[0].strip() if images_url else None
 
         # Idedame i list
-        dataList.append((text,image_url))
+        dataList.append((id, titles,images_url))
     return dataList
 def extractLrytas(tree):
 
@@ -67,27 +69,19 @@ def extractLrytas(tree):
     article_nodes = tree.xpath("//div[contains(@class, 'col-span-12 lg:col-span-')]")
     for id, article in enumerate(article_nodes, start = 1):
         #Istraukiamas pavadinimas
-        title = article.xpath(".//h2[contains(@class,'text-base')]/a/text()")
-        if title:
-            title[0].strip()
-        else:
-            None
+        titles = article.xpath(".//h2[contains(@class,'text-base')]/a/text()")
+        titles = titles[0].strip() if titles else None
 
-        image_url = article.xpath(".//img/@src")
-        #Patikrinama, ar img_url ne tuscias
-        if image_url:
-           image_url[0].strip()
-        else:
-            None
+        images_url = article.xpath(".//img/@src")
+        images_url = images_url[0].strip() if images_url else None
 
-        category = article.xpath(".//div[contains(@class,'flex items-center')]/a/span[contains(@class, 'text-xs')]/text()")
-        if category:
-           category[0].strip()
-        else:
-            None
+
+        categories = article.xpath(".//div[contains(@class,'flex items-center')]/a/span[contains(@class, 'text-xs')]/text()")
+        categories = categories[0].strip() if categories else None
 
         #idedame i list
-        dataList.append((id, title, image_url, category))
+        if titles and images_url and categories:
+            dataList.append((id, titles, images_url, categories))
     return dataList
 def save_to_file(source, dataList, return_format):
 
@@ -95,8 +89,6 @@ def save_to_file(source, dataList, return_format):
         fileName = "vaistaiList"
     elif source == "lrytas.lt":
         fileName = "straipsniaiList"
-    else:
-        print("error")
 
     if return_format == "list":
         for i in dataList:
@@ -108,9 +100,9 @@ def save_to_file(source, dataList, return_format):
             with open(f'{fileName}.csv', 'w', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
                 if fileName == "vaistaiList":
-                    writer.writerow(['Pavadinimas', 'Nuotraukos URL'])
+                    writer.writerow(['id','Pavadinimas', 'Nuotraukos URL'])
                 elif fileName == "straipsniaiList":
-                    writer.writerow(['Pavadinimas', 'Nuotraukos URL', "Kategorijos"])
+                    writer.writerow(['id','Pavadinimas', 'Nuotraukos URL', "Kategorijos"])
                 for element in dataList:
                     writer.writerow(element)
             print(f"CSV failas sukurtas: {fileName}.csv")
