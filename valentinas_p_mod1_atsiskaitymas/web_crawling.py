@@ -59,7 +59,6 @@ def fetchingCamelia(base_url, start_time: float, time_limit: int):
 
         #tikrinama, kiek produktu yra
         if current_page == 1:
-            idx = 1
             num_products_total = tree.xpath(".//div[contains(@data-test, 'products-total')]")
             if num_products_total:
                 text_products = num_products_total[0].xpath(".//text()")
@@ -71,10 +70,8 @@ def fetchingCamelia(base_url, start_time: float, time_limit: int):
             else:
                 print("Nėra produktų")
                 break
-        else:
-            idx = current_page * 24
         #Istraukiami produktai is svetaines
-        page_data = extractCamelia(tree, idx)
+        page_data = extractCamelia(tree)
         dataList.extend(page_data)
         #Sustabdoma, kai visi produktai surinkti
         if len(dataList) >= total_products:
@@ -83,23 +80,34 @@ def fetchingCamelia(base_url, start_time: float, time_limit: int):
         #Pereinama i kita svetaine, kai is puslapio yra surinkti duomenys
         current_page += 1
     return dataList
-def extractCamelia(tree, idx):
 
-    dataList = []
-    product_nodes = tree.xpath("//div[contains(@class, 'product-card')]")
-    for id, product in enumerate(product_nodes, start=len(dataList)+idx):
+id_storage = [0]
+def extractCamelia(tree):
 
-        # Istraukiamas pavadinimas
-        titles = product.xpath('.//div[contains(@class,\'product-name\')]/text()')
-        titles = titles[0].strip() if titles else None
+        dataList = []
+        idList = []
+        last_id = id_storage[-1]
 
-        # Istraukiama paveiksleliu URL
-        images_url = product.xpath(".//div/img[contains(@class,'product-image')]/@src")
-        images_url = images_url[0].strip() if images_url else None
+        product_nodes = tree.xpath("//div[contains(@class, 'product-card')]")
+        for idx, product in enumerate(product_nodes, start=last_id + 1):
 
-        # Idedame i list
-        dataList.append((id, titles, images_url))
-    return dataList
+            # Istraukiamas pavadinimas
+            titles = product.xpath('.//div[contains(@class,\'product-name\')]/text()')
+            titles = titles[0].strip() if titles else None
+
+            # Istraukiama paveiksleliu URL
+            images_url = product.xpath(".//div/img[contains(@class,'product-image')]/@src")
+            images_url = images_url[0].strip() if images_url else None
+
+            # Idedame i list
+            dataList.append((idx, titles, images_url))
+            idList.append(idx)
+
+        if dataList:
+            last_id = dataList[-1][0]
+            id_storage.append(last_id)
+
+        return dataList
 def extractLrytas(tree, start_time: float, time_limit: int):
     dataList = []
     article_nodes = tree.xpath("//div[contains(@class, 'col-span-12 lg:col-span-')]")
@@ -122,6 +130,7 @@ def extractLrytas(tree, start_time: float, time_limit: int):
 
         #idedame i list
         if titles and images_url and categories:
+            id += 1
             dataList.append((id, titles, images_url, categories))
     return dataList
 def saveToFile(source, dataList, return_format):
@@ -138,8 +147,8 @@ def saveToFile(source, dataList, return_format):
     # Jeigu formatas "csv", issaugoja faila i csv
     elif return_format == "csv":
         try:
-            with open(f'./valentinas_p_mod1_atsiskaitymas/results/{fileName}.csv', 'w', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
+            with open(f'./valentinas_p_mod1_atsiskaitymas/results/{fileName}.csv', 'w', newline='', encoding='utf-8') as csvFile:
+                writer = csv.writer(csvFile)
                 if fileName == "vaistaiList":
                     writer.writerow(['id','Pavadinimas', 'Nuotraukos URL'])
                 elif fileName == "straipsniaiList":
@@ -154,7 +163,7 @@ def saveToFile(source, dataList, return_format):
     # Jeigu formatas "json", issaugoja faila i json
     elif return_format == "json":
         try:
-            with open(f"./valentinas_p_mod1_atsiskaitymas/results/{fileName}.json", "w", newline='', ) as jsonFile:
+            with open(f"./valentinas_p_mod1_atsiskaitymas/results/{fileName}.json", "w", newline='', encoding='utf-8' ) as jsonFile:
                 json.dump(dataList, jsonFile, ensure_ascii=False, indent=4)
             print(f"Json failas sukurtas: {fileName}.json")
         except Exception as e:
