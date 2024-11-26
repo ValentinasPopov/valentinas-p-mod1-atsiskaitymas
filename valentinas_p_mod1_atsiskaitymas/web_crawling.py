@@ -9,7 +9,6 @@ from typing import Optional
 start_time = time()
 
 def crawling(time_limit: int, source: str = "camelia.lt", return_format: str = "list") -> Optional[str]:
-
     #sukuriamas tuscias list
     dataList = []
     try:
@@ -30,15 +29,14 @@ def crawling(time_limit: int, source: str = "camelia.lt", return_format: str = "
     except ValueError as e:
         print(f"Error: {e}")
         return None
-def parseHTML(url):
+def parseHTML(url: str):
     try:
         response = requests.get(url)
-        response.raise_for_status()
-        tree = html.fromstring(response.text)
+        response.raise_for_status()  # Ensure an HTTPError is raised for bad responses
+        tree = html.fromstring(response.content)
         return tree
-    except requests.exceptions.RequestException as e:
-        print(f"Užklausa failed: {e}")
-        return None
+    except Exception as e:
+        raise ValueError(f"Klaida analizuojant HTML:{e}")
 def fetchingCamelia(base_url, start_time: float, time_limit: int):
 
     dataList = []
@@ -48,11 +46,11 @@ def fetchingCamelia(base_url, start_time: float, time_limit: int):
         #Skaiciuojamas laikas
         elapsed_time = time() - start_time
         if elapsed_time > time_limit:
-            print(f"{time_limit}")
+            #print(f"{time_limit}")
             break
 
         url = base_url if current_page == 1 else f"{base_url}?page={current_page}&offset=1#"
-        print(f"Puslapiai, is kuriuos traukiama info: {url}\n")
+        #print(f"Puslapiai, is kuriuos traukiama info: {url}\n")
 
         tree = parseHTML(url)
         if tree is None:
@@ -64,9 +62,11 @@ def fetchingCamelia(base_url, start_time: float, time_limit: int):
             idx = 1
             num_products_total = tree.xpath(".//div[contains(@data-test, 'products-total')]")
             if num_products_total:
-                num = num_products_total[0].xpath(".//text()")
-                num = [text.strip().replace('Produktų ', '') for text in num if text.strip()]
-                total_products = int(num[0]) if num else 0
+                text_products = num_products_total[0].xpath(".//text()")
+
+                numbers = [' '.join(num.split()[1:]) for num in text_products ]
+                print(numbers)
+                total_products = int(numbers[0]) if numbers else 0
                 print(f"Iš viso produktų: {total_products}")
             else:
                 print("Nėra produktų")
@@ -138,7 +138,7 @@ def saveToFile(source, dataList, return_format):
     # Jeigu formatas "csv", issaugoja faila i csv
     elif return_format == "csv":
         try:
-            with open(f'./results/{fileName}.csv', 'w', newline='', encoding='utf-8') as file:
+            with open(f'./valentinas_p_mod1_atsiskaitymas/results/{fileName}.csv', 'w', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
                 if fileName == "vaistaiList":
                     writer.writerow(['id','Pavadinimas', 'Nuotraukos URL'])
@@ -154,13 +154,13 @@ def saveToFile(source, dataList, return_format):
     # Jeigu formatas "json", issaugoja faila i json
     elif return_format == "json":
         try:
-            with open(f"./results/{fileName}.json", "w", newline='', ) as jsonFile:
+            with open(f"./valentinas_p_mod1_atsiskaitymas/results/{fileName}.json", "w", newline='', ) as jsonFile:
                 json.dump(dataList, jsonFile, ensure_ascii=False, indent=4)
             print(f"Json failas sukurtas: {fileName}.json")
         except Exception as e:
             print(f"Json failo klaida: {e}")
     else:
         # Netinkamo formato error
-        raise ValueError("Nepalaikomas formatas. Naudokite 'list', 'csv' arba 'json'.")
+        raise ValueError ("Nepalaikomas formatas. Naudokite 'list', 'csv' arba 'json'.")
 
 
