@@ -22,6 +22,6 @@ Pavyzdys: crawling(time_limit=10, source="camelia.lt", return_format="csv")
 
 Suintaliuoti galima per pip: **pip install valentinas-p-mod1-atsiskaitymas**
 
-Instaliuoti galima per pypi repozitoriją: **pypi install valentinas-p-mod1-atsiskaitymas**
+Pypi repozitorija: **https://pypi.org/project/valentinas-p-mod1-atsiskaitymas/0.12/**
 
-Testus galima ištestuoti per "/tests/test_web_crawling.py"
+Testus galima ištestuoti per "/tsts/test_web_crawling.py"
