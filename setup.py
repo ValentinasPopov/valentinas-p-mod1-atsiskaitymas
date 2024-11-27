@@ -1,7 +1,5 @@
 import setuptools
-from docutils.nodes import version
 from setuptools import setup, find_packages
-from setuptools.command.install import install
 
 setup(
     name="valentinas-p_mod1-atsiskaitymas",

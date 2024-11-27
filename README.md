@@ -24,3 +24,4 @@ Suintaliuoti galima per pip: **pip install valentinas-p-mod1-atsiskaitymas**
 
 Instaliuoti galima per pypi repozitoriją: **pypi install valentinas-p-mod1-atsiskaitymas**
 
+Testus galima ištestuoti per "/tests/test_web_crawling.py"
